@@ -14,6 +14,8 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+		
+		2021 Nestor Levi Palomeque
 */
 
 //#define MbDebug
@@ -30,8 +32,12 @@
 #define Mudbus_h
 
 #define MB_N_R 125 //Max 16 bit registers for Modbus is 125
+
 #define MB_N_C 128 //Max coils for Modbus is 2000 - dont need that many so here is a multiple of 8
+
+#ifndef MB_PORT
 #define MB_PORT 502
+#endif
 
 enum MB_FC {
   MB_FC_NONE           = 0,
@@ -47,17 +53,32 @@ enum MB_FC {
 class Mudbus
 {
 public:
-  Mudbus();
-  void Run();  
-  int  R[MB_N_R];
-  bool C[MB_N_C];  
+  //Mudbus(size_t R = MB_N_R, size_t C = MB_N_C);
+	Mudbus();
+	Mudbus(int *MW, bool *MB, uint8_t *BArray) : R(MW), C(MB), ByteArray(BArray){}
+	void Run();  
+	int *R;
+	bool *C;
   bool Active;    
   unsigned long PreviousActivityTime;
   int Runs, Reads, Writes;
 private: 
-  uint8_t ByteArray[260];
+  uint8_t *ByteArray;			//Vector auxiliar donde se guardan los datos recibidos desde el cliente
   MB_FC FC;
   void SetFC(int fc);
+};
+
+template<size_t n_r = MB_N_R, size_t n_c = MB_N_C>	//Template, para editar el tamaño de los vectores desde la instancia
+class Modbus : public Mudbus{
+	public:
+		Modbus() : Mudbus(MW, MB, Array.MW){}	//Envío los punteros de los array creados acá (mediante 'template')
+		int MW[n_r];										//Vector de MW, es el mismo que R en la clase Mudbus
+		bool MB[n_c]; 									//Vector de MB, es el mismo que C en la clase Mudbus
+	private:
+		union array{
+			uint8_t MW[n_r * 2 + 10];
+			uint8_t MB[n_c / 16 + 10];
+		}Array;													//Vector auxiliar, es el mismo que ByteArray en la clase Mudbus
 };
 
 #endif
